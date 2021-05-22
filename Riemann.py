@@ -3,11 +3,17 @@ import matplotlib.animation as animation
 from matplotlib.widgets import Slider
 import numpy as np
 
-figure, axes = plt.subplots()
-
 def f(x):
-    return x**2
+    return x**3
 
+#functions value over an interval
+x = np.linspace(-5, 5, 100)
+y = f(x)
+
+figure, axes = plt.subplots()
+axes.set_xlim([-10, 10])
+axes.set_ylim([-10, 10])
+axes.grid()
 class Rectangle:
     def __init__(self, x_1, y_1, x_2, y_2, x_3, y_3, x_4, y_4, area, type):
         self.x_1 = x_1
@@ -52,6 +58,7 @@ def Init_Rectangle(subdivision_start, subdivision_end, type):
     return small_rectangle
 
 def Draw_Rectangle(rectangle):
+
     subdivison_linespace = np.linspace(rectangle.x_1, rectangle.x_2, 100)
     y = f(subdivison_linespace)
     
@@ -100,6 +107,7 @@ small_area = 0
 big_area = 0
 subdivisions = Intervall_to_Subdivisions(intervall_start, intervall_end, 10)
 rectangles = Rectangles_over_Subdivions(subdivisions)
+
 for i in range(0, len(rectangles)):
     Draw_Rectangle(rectangles[i])
     if(rectangles[i].type == "small"):
@@ -107,9 +115,6 @@ for i in range(0, len(rectangles)):
     else:
         big_area += rectangles[i].area
 
-#functions value over an interval
-x = np.linspace(-5, 5, 100)
-y = f(x)
 
 
 area = "Small Area {}\nBig Area {}".format(small_area, big_area)
@@ -125,6 +130,9 @@ samp = Slider(axamp, 'Numbers', 0, 1000, valinit=10, valstep=1)
 
 def update(val):
     axes.clear()
+    axes.grid()
+    axes.set_xlim([-10, 10])
+    axes.set_ylim([-10, 10])
     nb_subdivisions = samp.val
     small_area = 0
     big_area = 0
