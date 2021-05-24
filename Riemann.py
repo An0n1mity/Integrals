@@ -3,6 +3,10 @@ import matplotlib.animation as animation
 from matplotlib.widgets import Slider, TextBox
 import numpy as np
 
+nb_subdivisions = 10
+intervall_start = 0
+intervall_end = 0
+
 class f:
     def __init__(self, expression, value, x):
         self.expression = expression
@@ -72,7 +76,10 @@ def Draw_Rectangle(rectangle):
 def Intervall_to_Subdivisions(intervall_start, intervall_end, nb_subdivisions):
     tmp_subdivisons = []
     for i in range(0, nb_subdivisions+1):
-        tmp = i*((intervall_end-intervall_start)/nb_subdivisions) + intervall_start
+        try:
+            tmp = i*((intervall_end-intervall_start)/nb_subdivisions) + intervall_start
+        except:
+            return []
         tmp_subdivisons.append(tmp)
     subdivisions = np.array(tmp_subdivisons)
 
@@ -113,16 +120,24 @@ def Subdivisons_to_Values(rectangles, function):
     
     return (y_data_s, y_data_b)
 
-def Update_Plot(function, nb_subdivisons):
-
+def Update_Plot(function, nb_subdivisons, intervall_start, intervall_end):
+    axes.collections.clear()
     #update the rectagnles
-    intervall_start = -5
-    intervall_end = 5
+    small_area = 0
+    big_area = 0
 
     subdivisions = Intervall_to_Subdivisions(intervall_start, intervall_end, nb_subdivisons)
     rectangles = Rectangles_over_Subdivions(subdivisions, function)
     for rectangle in rectangles:
         Draw_Rectangle(rectangle)
+        if(rectangle.type == "small"):
+            small_area += rectangle.area
+        else:
+            big_area += rectangle.area
+
+    area = "Small Area {}\nBig Area {}".format(small_area, big_area)
+
+    
     y_data_s, y_data_b = Subdivisons_to_Values(rectangles, function)
     x = np.linspace(intervall_start, intervall_end, len(y_data_s))
 
@@ -132,97 +147,91 @@ def Update_Plot(function, nb_subdivisons):
     l_b.set_ydata(y_data_b)
 
     #Update the function
-    function.x = x
+    function.x = np.linspace(-10, 10, len(y_data_s))
     function.Calculate(function.expression)
     l_1.set_ydata(function.value)
     l_1.set_xdata(function.x)
 
+    text_area.set_text(area)
     figure.canvas.draw()
     figure.canvas.flush_events()
 
 
 #Draw the function
-x = np.linspace(-5, 5, 100)
+
+x = np.linspace(-10, 10, 100)
 function = f("self.x**3", 0, x)
 function.Calculate(function.expression)
 y = function.value
 
-intervall_start = -5
-intervall_end = 5
 small_area = 0
 big_area = 0
-subdivisions = Intervall_to_Subdivisions(intervall_start, intervall_end, 10)
+subdivisions = Intervall_to_Subdivisions(intervall_start, intervall_end, nb_subdivisions)
 rectangles = Rectangles_over_Subdivions(subdivisions, function)
-
 figure, axes = plt.subplots()
 axes.set_xlim([-10, 10])
 axes.set_ylim([-10, 10])
 axes.grid()
 axes.set_ylabel('f(x)')
 axes.set_xlabel('x')
+
 y_data_s, y_data_b = Subdivisons_to_Values(rectangles, function)
 l_1, = plt.plot(x, y, label='quadratic')
 x = np.linspace(-5, 5, 1000)
 for rectangle in rectangles:
     Draw_Rectangle(rectangle)
-
-l_s, = plt.plot(x, y_data_s)
-l_b, = plt.plot(x, y_data_b)
-
-
-figure.canvas.draw()
-figure.canvas.flush_events()
-"""
-#Create small rectangles
-intervall_start = -5
-intervall_end = 5
-small_area = 0
-big_area = 0
-subdivisions = Intervall_to_Subdivisions(intervall_start, intervall_end, 10)
-rectangles = Rectangles_over_Subdivions(subdivisions, function)
-y_data = Subdivisons_to_Values(rectangles, function)
-l.set_ydata(y_data[1])
-figure.canvas.draw()
-figure.canvas.flush_events()
-axes.grid()
-
-for i in range(0, len(rectangles)):
-    Draw_Rectangle(rectangles[i])
-    if(rectangles[i].type == "small"):
-        small_area += rectangles[i].area
+    if(rectangle.type == "small"):
+        small_area += rectangle.area
     else:
-        big_area += rectangles[i].area
+        big_area += rectangle.area
 
-
+l_s, = plt.plot(x, y_data_s, 'b')
+l_b, = plt.plot(x, y_data_b, 'r')
 
 area = "Small Area {}\nBig Area {}".format(small_area, big_area)
-#index of the minimal value over the interval
 
 
-"""
-area = 0
+figure.canvas.draw()
+small_area = 0
+big_area = 0
+area = "Small Area {}\nBig Area {}".format(small_area, big_area)
 props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
-axes.text(0.05, 0.95, area, transform=axes.transAxes, fontsize=14, verticalalignment='top', bbox=props)
+text_area = axes.text(0.05, 0.95, area, transform=axes.transAxes, fontsize=14, verticalalignment='top', bbox=props)
 axamp = plt.axes([0.25, .03, 0.50, 0.02])
-axbox = plt.axes([0.25, .9, 0.50, 0.1])
+axbox = plt.axes([0.25, .9, 0.25, 0.05])
+ax_intervall_start = plt.axes([0.6, .9, 0.10, 0.05])
+ax_intervall_stop = plt.axes([0.8, .9, 0.10, 0.05])
+
 
 text_box = TextBox(axbox, 'Function', initial="x**3")
-samp = Slider(axamp, 'Numbers', 0, 1000, valinit=10, valstep=1)
+samp = Slider(axamp, 'Numbers', 0, 1000, valinit=0, valstep=1)
+cursor_start = Slider(ax_intervall_start, 'Start', -10, 10, valinit = 0, valstep=1);
+cursor_stop = Slider(ax_intervall_stop, 'Stop', -10, 10, valinit = 0, valstep=1);
 
-def update(val):
+def update_start(val):
+    global intervall_start
+    intervall_start = cursor_start.val
+    Update_Plot(function, nb_subdivisions, intervall_start, intervall_end)
+
+def update_end(val):
+    global intervall_end
+    intervall_end = cursor_stop.val
+    Update_Plot(function, nb_subdivisions, intervall_start, intervall_end)
+
+def update_subdivisions(val):
+    global nb_subdivisions 
     nb_subdivisions = samp.val
-    Update_Plot(function, nb_subdivisions)
+    Update_Plot(function, nb_subdivisions, intervall_start, intervall_end)
 
 def submit(text):
     #Update the function
     text = text.replace("x", "self.x")
     function.expression = text
-    Update_Plot(function, 10)
+    Update_Plot(function, nb_subdivisions, intervall_start, intervall_end)
 
     
-
-
-# call update function on slider value change
-samp.on_changed(update)
+samp.on_changed(update_subdivisions)
+cursor_start.on_changed(update_start)
+cursor_stop.on_changed(update_end)
 text_box.on_submit(submit)
 plt.show()
